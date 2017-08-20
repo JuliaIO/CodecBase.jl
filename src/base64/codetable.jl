@@ -3,9 +3,10 @@
 
 const CodeTable64 = CodeTable{64}
 
-# These are used to detect padding and invalid data.
-const BASE64_DECPAD = UInt8(0x40)
-const BASE64_DECERR = UInt8(0xff)
+const BASE64_DECPAD = UInt8(0x40)  # PADding
+const BASE64_DECIGN = UInt8(0x41)  # IGNore
+const BASE64_DECEND = UInt8(0x42)  # END
+const BASE64_DECERR = UInt8(0xff)  # ERRor
 
 function CodeTable64(asciistr::String, pad::Char)
     if !isascii(asciistr) || !isascii(pad)
@@ -25,6 +26,17 @@ function CodeTable64(asciistr::String, pad::Char)
     padcode = UInt8(pad)
     decodeword[padcode+1] = BASE64_DECPAD
     return CodeTable64(encodeword, decodeword, padcode)
+end
+
+function ignorechars!(table::CodeTable64, chars::String)
+    if !isascii(chars)
+        throw(ArgumentError("ignored characters must be ASCII"))
+    end
+    for char in chars
+        code = UInt8(char)
+        table.decodeword[code+1] = BASE64_DECIGN
+    end
+    return table
 end
 
 @inline function encode(table::CodeTable64, byte::UInt8)

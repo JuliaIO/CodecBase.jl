@@ -56,6 +56,13 @@ end
     @test transcode(Base64Decoder(), b"Zm9vYmE=") == b"fooba"
     @test transcode(Base64Decoder(), b"Zm9vYmFy") == b"foobar"
 
+    @test transcode(Base64Decoder(), b"Zg=\n=") == b"f"
+    @test transcode(Base64Decoder(), b"Zm9v\nYmFy") == b"foobar"
+    @test transcode(Base64Decoder(), b"Zg=\r\n=") == b"f"
+    @test transcode(Base64Decoder(), b"Z m  9\rv\r\nYm\nF\t\ty") == b"foobar"
+    @test transcode(Base64Decoder(), b"  Zm9vYmFy  ") == b"foobar"
+    @test transcode(Base64Decoder(), b"      Zm     9v      Ym    Fy      ") == b"foobar"
+
     @test_throws ArgumentError transcode(Base64Decoder(), b"a")
     @test_throws ArgumentError transcode(Base64Decoder(), b"aa")
     @test_throws ArgumentError transcode(Base64Decoder(), b"aaa")

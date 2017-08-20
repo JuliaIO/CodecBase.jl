@@ -11,3 +11,10 @@ struct CodeTable{base}
     # ascii code for padding
     padcode::UInt8
 end
+
+function Base.copy(table::CodeTable{base}) where base
+    return CodeTable{base}(
+        copy(table.encodeword),
+        copy(table.decodeword),
+        table.padcode)
+end
