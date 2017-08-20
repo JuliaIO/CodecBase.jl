@@ -108,6 +108,11 @@ function TranscodingStreams.process(
     # Epilogue.
     if status == :end || status == :error
         finish_decoding!(state)
+    else
+        # Consume at least one byte if any.
+        while buffer.size < 3 && i + 1 ≤ input.size
+            buffer[buffer.size+=1] = input[i+=1]
+        end
     end
     return i, j, status
 end
