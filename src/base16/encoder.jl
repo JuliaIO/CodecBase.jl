@@ -3,6 +3,7 @@
 
 struct Base16Encoder <: Codec
     table::CodeTable16
+    state::State
 end
 
 """
@@ -19,7 +20,7 @@ function Base16Encoder(;uppercase::Bool=true)
     else
         table = BASE16_LOWER
     end
-    return Base16Encoder(table)
+    return Base16Encoder(table, State())
 end
 
 const Base16EncoderStream{S} = TranscodingStream{Base16Encoder,S} where S<:IO
@@ -41,19 +42,37 @@ macro encode16(i, j1, j2)
     end |> esc
 end
 
+function TranscodingStreams.startproc(
+        codec :: Base16Encoder,
+        state :: Symbol,
+        error :: Error)
+    start!(codec.state)
+    return :ok
+end
+
 function TranscodingStreams.process(
         codec  :: Base16Encoder,
         input  :: Memory,
         output :: Memory,
         error  :: Error)
-    i = j = 0
     table = codec.table
-    if input.size == 0
-        return i, j, :end
-    elseif j + 2 > output.size
-        return i, j, :ok
+    state = codec.state
+
+    # Check if we can encode data.
+    if !is_running(state)
+        error[] = ArgumentError("encoding is already finished")
+        return 0, 0, :error
+    elseif input.size == 0
+        finish!(state)
+        return 0, 0, :end
+    elseif output.size < 2
+        # Need more output space.
+        return 0, 0, :ok
     end
-    k = min(fld(input.size - i, 4), fld(output.size - j, 8))
+
+    # Encode the data.
+    i = j = 0
+    k::Int = min(fld(input.size, 4), fld(output.size, 8))
     @inbounds while k > 0  # ≡ i + 4 ≤ input.size && j + 8 ≤ output.size
         # unrolled loop
         @encode16 i+1 j+1 j+2

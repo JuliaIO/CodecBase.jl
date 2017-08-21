@@ -3,48 +3,43 @@
 
 struct Base16Decoder <: Codec
     table::CodeTable16
-    state::DecodeState
+    state::State
     buffer::Buffer
 end
 
 """
-    Base16Decoder()
+    Base16Decoder(;ignore::String=$(escape_string(whitespace)))
 
 Create a base16 decoding codec.
+
+Arguments
+---------
+- `ignore`: ASCII characters that will be ignored while decoding
 """
-function Base16Decoder()
-    return Base16Decoder(BASE16_UPPER, DecodeState(), Buffer(1))
+function Base16Decoder(;ignore::String=whitespace)
+    table = copy(BASE16_UPPER)
+    ignorechars!(table, ignore)
+    return Base16Decoder(table, State(), Buffer(1))
 end
 
 const Base16DecoderStream{S} = TranscodingStream{Base16Decoder,S} where S<:IO
 
 """
-    Base16DecoderStream(stream::IO)
+    Base16DecoderStream(stream::IO; kwargs...)
 
-Create a base16 decoding stream.
+Create a base16 decoding stream (see `Base16Decoder` for `kwargs`).
 """
-function Base16DecoderStream(stream::IO)
-    return TranscodingStream(Base16Decoder(), stream)
+function Base16DecoderStream(stream::IO; kwargs...)
+    return TranscodingStream(Base16Decoder(;kwargs...), stream)
 end
 
 function TranscodingStreams.startproc(
         codec :: Base16Decoder,
         state :: Symbol,
         error :: Error)
-    start_decoding!(codec.state)
+    start!(codec.state)
+    empty!(codec.buffer)
     return :ok
-end
-
-macro decode16(a, b, j)
-    quote
-        _a = decode(table, $(a))
-        _b = decode(table, $(b))
-        if _a > 0x0f || _b > 0x0f
-            error[] = ArgumentError("invalid data: '$(String([$(a), $(b)]))'")
-            status = :error
-        end
-        output[$(j)] = _a << 4 | _b
-    end |> esc
 end
 
 function TranscodingStreams.process(
@@ -52,59 +47,83 @@ function TranscodingStreams.process(
         input  :: Memory,
         output :: Memory,
         error  :: Error)
-    i = j = 0
-    a = b = 0x00
     table = codec.table
     state = codec.state
     buffer = codec.buffer
 
+    # Check if we can encode data.
     if !is_running(state)
         error[] = ArgumentError("decoding is already finished")
-        return i, j, :error
-    elseif j + 1 > output.size
-        return i, j, :ok
+        return 0, 0, :error
+    elseif output.size < 1
+        # Need more output space.
+        return 0, 0, :ok
     end
 
-    @assert buffer.size ≤ 1
-    if buffer.size == 0 && i + 2 ≤ input.size
-        a = input[i+=1]
-        b = input[i+=1]
-    elseif buffer.size == 1 && i + 1 ≤ input.size
-        a = buffer[1]
-        b = input[i+=1]
-    else
-        if buffer.size == 0 && input.size == 0
-            finish_decoding!(state)
-            return i, j, :end
-        elseif input.size > 0
-            buffer[buffer.size+=1] = input[i+=1]
-            return i, j, :ok
-        else
-            error[] = ArgumentError("unexpected end of input")
-            finish_decoding!(state)
-            return i, j, :error
-        end
+    # Load the first bytes.
+    i = j = 0
+    if buffer.size < 1 && i < input.size
+        buffer[buffer.size+=1] = input[i+=1]
+    end
+    c1 = c2 = BASE16_CODEIGN
+    if buffer.size ≥ 1
+        c1 = decode(table, buffer[1])
     end
     empty!(buffer)
 
+    # Start decoding loop.
     status = :ok
-    @decode16 a b j+1
-    j += 1
-    @inbounds while i + 8 ≤ input.size && j + 4 ≤ output.size && status == :ok
-        @decode16 input[i+1] input[i+2] j+1
-        @decode16 input[i+3] input[i+4] j+2
-        @decode16 input[i+5] input[i+6] j+3
-        @decode16 input[i+7] input[i+8] j+4
-        i += 8
-        j += 4
+    @inbounds while true
+        if c1 > 0x0f || c2 > 0x0f
+            i, j, status = decode16_irregular(table, c1, c2, input, i, output, j, error)
+        else
+            output[j+1] = c1 << 4 | c2
+            j += 1
+        end
+        if i + 2 ≤ input.size && j + 1 ≤ output.size
+            c1 = decode(table, input[i+1])
+            c2 = decode(table, input[i+2])
+            i += 2
+        else
+            break
+        end
     end
-    @inbounds while i + 2 ≤ input.size && j + 1 ≤ output.size && status == :ok
-        @decode16 input[i+1] input[i+2] j+1
-        i += 2
-        j += 1
-    end
+
+    # Epilogue.
     if status == :end || status == :error
-        finish_decoding!(state)
+        finish!(state)
+    end
+    return i, j, status
+end
+
+# Decode irregular code (e.g. non-alphabet, etc.).
+function decode16_irregular(table, c1, c2, input, i, output, j, error)
+    # Skip ignored chars.
+    while true
+        if c1 == BASE16_CODEIGN
+            c1 = c2
+        elseif c2 == BASE16_CODEIGN
+            # pass
+        else
+            break
+        end
+        if i + 1 ≤ input.size
+            c2 = decode(table, input[i+=1])
+        else
+            c2 = BASE16_CODEEND
+            break
+        end
+    end
+
+    # Write output.
+    if c1 ≤ 0x0f && c2 ≤ 0x0f
+        output[j+=1] = c1 << 4 | c2
+        status = :ok
+    elseif c1 == BASE16_CODEIGN && c2 == BASE16_CODEEND
+        status = :end
+    else
+        error[] = ArgumentError("invalid data")
+        status = :error
     end
     return i, j, status
 end

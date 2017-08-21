@@ -3,11 +3,9 @@
 
 struct Base64Decoder <: Codec
     table::CodeTable64
-    state::DecodeState
+    state::State
     buffer::Buffer
 end
-
-const whitespace = "\t\n\v\f\r "
 
 """
     Base64Decoder(;urlsafe::Bool=false, ignore::String="$(escape_string(whitespace))")
@@ -27,7 +25,7 @@ function Base64Decoder(;urlsafe::Bool=false, ignore::String=whitespace)
     end
     table = copy(table)
     ignorechars!(table, ignore)
-    return Base64Decoder(table, DecodeState(), Buffer(3))
+    return Base64Decoder(table, State(), Buffer(3))
 end
 
 const Base64DecoderStream{S} = TranscodingStream{Base64Decoder,S} where S<:IO
@@ -45,7 +43,7 @@ function TranscodingStreams.startproc(
         codec :: Base64Decoder,
         state :: Symbol,
         error :: Error)
-    start_decoding!(codec.state)
+    start!(codec.state)
     return :ok
 end
 
@@ -58,47 +56,48 @@ function TranscodingStreams.process(
     state = codec.state
     buffer = codec.buffer
 
-    # Early returns.
+    # Check if we can encode data.
     if !is_running(state)
         error[] = ArgumentError("decoding is already finished")
         return 0, 0, :error
     elseif output.size < 3
-        # Not enough space to write the output.  This will expand the output
-        # buffer.
+        # Need more output space.
         return 0, 0, :ok
     end
 
-    # Load data from the buffer.
+    # Load the frist bytes.
     i = j = 0
-    a = b = c = d = BASE64_DECIGN
-    @assert buffer.size ≤ 3
+    while buffer.size < 3 && i < input.size
+        buffer[buffer.size+=1] = input[i+=1]
+    end
+    c1 = c2 = c3 = c4 = BASE64_CODEIGN
     if buffer.size ≥ 1
-        a = decode(table, buffer[1])
+        c1 = decode(table, buffer[1])
     end
     if buffer.size ≥ 2
-        b = decode(table, buffer[2])
+        c2 = decode(table, buffer[2])
     end
     if buffer.size ≥ 3
-        c = decode(table, buffer[3])
+        c3 = decode(table, buffer[3])
     end
     empty!(buffer)
 
     # Start decoding loop.
     status = :ok
     @inbounds while true
-        if a > 0x3f || b > 0x3f || c > 0x3f || d > 0x3f
-            i, j, status = decode_irregular(table, a, b, c, d, input, i, output, j, error)
+        if c1 > 0x3f || c2 > 0x3f || c3 > 0x3f || c4 > 0x3f
+            i, j, status = decode_irregular(table, c1, c2, c3, c4, input, i, output, j, error)
         else
-            output[j+1] = a << 2 | b >> 4
-            output[j+2] = b << 4 | c >> 2
-            output[j+3] = c << 6 | d
+            output[j+1] = c1 << 2 | c2 >> 4
+            output[j+2] = c2 << 4 | c3 >> 2
+            output[j+3] = c3 << 6 | c4
             j += 3
         end
         if i + 4 ≤ input.size && j + 3 ≤ output.size && status == :ok
-            a = decode(table, input[i+1])
-            b = decode(table, input[i+2])
-            c = decode(table, input[i+3])
-            d = decode(table, input[i+4])
+            c1 = decode(table, input[i+1])
+            c2 = decode(table, input[i+2])
+            c3 = decode(table, input[i+3])
+            c4 = decode(table, input[i+4])
             i += 4
         else
             break
@@ -107,55 +106,50 @@ function TranscodingStreams.process(
 
     # Epilogue.
     if status == :end || status == :error
-        finish_decoding!(state)
-    else
-        # Consume at least one byte if any.
-        while buffer.size < 3 && i + 1 ≤ input.size
-            buffer[buffer.size+=1] = input[i+=1]
-        end
+        finish!(state)
     end
     return i, j, status
 end
 
 # Decode irregular code (e.g. non-alphabet, padding, etc.).
-function decode_irregular(table, a, b, c, d, input, i, output, j, error)
+function decode_irregular(table, c1, c2, c3, c4, input, i, output, j, error)
     # Skip ignored chars.
     while true
-        if a == BASE64_DECIGN
-            a, b, c = b, c, d
-        elseif b == BASE64_DECIGN
-            b, c = c, d
-        elseif c == BASE64_DECIGN
-            c = d
-        elseif d == BASE64_DECIGN
+        if c1 == BASE64_CODEIGN
+            c1, c2, c3 = c2, c3, c4
+        elseif c2 == BASE64_CODEIGN
+            c2, c3 = c3, c4
+        elseif c3 == BASE64_CODEIGN
+            c3 = c4
+        elseif c4 == BASE64_CODEIGN
             # pass
         else
             break
         end
         if i + 1 ≤ input.size
-            d = decode(table, input[i+=1])
+            c4 = decode(table, input[i+=1])
         else
-            d = BASE64_DECEND
+            c4 = BASE64_CODEEND
             break
         end
     end
 
     # Write output.
-    if a ≤ 0x3f && b ≤ 0x3f && c ≤ 0x3f && d ≤ 0x3f
-        output[j+=1] = a << 2 | b >> 4
-        output[j+=1] = b << 4 | c >> 2
-        output[j+=1] = c << 6 | d
+    if c1 ≤ 0x3f && c2 ≤ 0x3f && c3 ≤ 0x3f && c4 ≤ 0x3f
+        output[j+=1] = c1 << 2 | c2 >> 4
+        output[j+=1] = c2 << 4 | c3 >> 2
+        output[j+=1] = c3 << 6 | c4
         status = :ok
-    elseif a ≤ 0x3f && b ≤ 0x3f && c ≤ 0x3f && d == BASE64_DECPAD
-        d = 0x00
-        output[j+=1] = a << 2 | b >> 4
-        output[j+=1] = b << 4 | c >> 2
+    elseif c1 ≤ 0x3f && c2 ≤ 0x3f && c3 ≤ 0x3f && c4 == BASE64_CODEPAD
+        c4 = 0x00
+        output[j+=1] = c1 << 2 | c2 >> 4
+        output[j+=1] = c2 << 4 | c3 >> 2
         status = :end
-    elseif a ≤ 0x3f && b ≤ 0x3f && c == d == BASE64_DECPAD
-        c = d = 0x00
-        output[j+=1] = a << 2 | b >> 4
+    elseif c1 ≤ 0x3f && c2 ≤ 0x3f && c3 == c4 == BASE64_CODEPAD
+        c3 = c4 = 0x00
+        output[j+=1] = c1 << 2 | c2 >> 4
         status = :end
-    elseif a == b == c == BASE64_DECIGN && d == BASE64_DECEND
+    elseif c1 == c2 == c3 == BASE64_CODEIGN && c4 == BASE64_CODEEND
         status = :end
     else
         error[] = ArgumentError("invalid data")

@@ -3,10 +3,10 @@
 
 const CodeTable64 = CodeTable{64}
 
-const BASE64_DECPAD = UInt8(0x40)  # PADding
-const BASE64_DECIGN = UInt8(0x41)  # IGNore
-const BASE64_DECEND = UInt8(0x42)  # END
-const BASE64_DECERR = UInt8(0xff)  # ERRor
+const BASE64_CODEPAD = 0x40  # PADding
+const BASE64_CODEIGN = 0x41  # IGNore
+const BASE64_CODEEND = 0x42  # END
+const BASE64_CODEERR = 0xff  # ERRor
 
 function CodeTable64(asciistr::String, pad::Char)
     if !isascii(asciistr) || !isascii(pad)
@@ -16,7 +16,7 @@ function CodeTable64(asciistr::String, pad::Char)
     end
     encodeword = Vector{UInt8}(64)
     decodeword = Vector{UInt8}(256)
-    fill!(decodeword, BASE64_DECERR)
+    fill!(decodeword, BASE64_CODEERR)
     for (i, char) in enumerate(asciistr)
         bits = UInt8(i-1)
         code = UInt8(char)
@@ -24,19 +24,12 @@ function CodeTable64(asciistr::String, pad::Char)
         decodeword[code+1] = bits
     end
     padcode = UInt8(pad)
-    decodeword[padcode+1] = BASE64_DECPAD
+    decodeword[padcode+1] = BASE64_CODEPAD
     return CodeTable64(encodeword, decodeword, padcode)
 end
 
 function ignorechars!(table::CodeTable64, chars::String)
-    if !isascii(chars)
-        throw(ArgumentError("ignored characters must be ASCII"))
-    end
-    for char in chars
-        code = UInt8(char)
-        table.decodeword[code+1] = BASE64_DECIGN
-    end
-    return table
+    return ignorechars!(table, chars, BASE64_CODEIGN)
 end
 
 @inline function encode(table::CodeTable64, byte::UInt8)

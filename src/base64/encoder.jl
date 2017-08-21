@@ -3,11 +3,12 @@
 
 struct Base64Encoder <: Codec
     table::CodeTable64
+    state::State
     buffer::Buffer
 end
 
 """
-    Base64Encoder(urlsafe::Bool=false)
+    Base64Encoder(;urlsafe::Bool=false)
 
 Create a base64 encoding codec.
 
@@ -21,7 +22,7 @@ function Base64Encoder(;urlsafe::Bool=false)
     else
         table = BASE64_STANDARD
     end
-    return Base64Encoder(table, Buffer(2))
+    return Base64Encoder(table, State(), Buffer(2))
 end
 
 const Base64EncoderStream{S} = TranscodingStream{Base64Encoder,S} where S<:IO
@@ -39,18 +40,9 @@ function TranscodingStreams.startproc(
         codec :: Base64Encoder,
         state :: Symbol,
         error :: Error)
+    start!(codec.state)
     empty!(codec.buffer)
     return :ok
-end
-
-macro encode64()
-    quote
-        output[j+1] = encode(table, a >> 2         )
-        output[j+2] = encode(table, a << 4 | b >> 4)
-        output[j+3] = encode(table, b << 2 | c >> 6)
-        output[j+4] = encode(table,          c     )
-        j += 4
-    end |> esc
 end
 
 function TranscodingStreams.process(
@@ -58,66 +50,77 @@ function TranscodingStreams.process(
         input  :: Memory,
         output :: Memory,
         error  :: Error)
-    i = j = 0
-    a = b = c = 0x00
     table = codec.table
+    state = codec.state
     buffer = codec.buffer
 
-    if j + 4 > output.size
-        # This will expand the output buffer.
-        return i, j, :ok
+    # Check if we can encode data.
+    if !is_running(state)
+        error[] = ArgumentError("encoding is already finished")
+        return 0, 0, :error
+    elseif output.size < 4
+        # Need more output space.
+        return 0, 0, :ok
     end
 
-    @assert buffer.size ≤ 2
-    if buffer.size == 0 && i + 3 ≤ input.size
-        a = input[i+=1]
-        b = input[i+=1]
-        c = input[i+=1]
-    elseif buffer.size == 1 && i + 2 ≤ input.size
-        a = buffer[1]
-        b = input[i+=1]
-        c = input[i+=1]
-    elseif buffer.size == 2 && i + 1 ≤ input.size
-        a = buffer[1]
-        b = buffer[2]
-        c = input[i+=1]
-    elseif input.size == 0
-        if buffer.size == 0
-            # ok
-        elseif buffer.size == 1
-            a = buffer[1]
-            output[j+=1] = encode(table, a >> 2)
-            output[j+=1] = encode(table, a << 4)
-            output[j+=1] = table.padcode
-            output[j+=1] = table.padcode
-        elseif buffer.size == 2
-            a = buffer[1]
-            b = buffer[2]
-            output[j+=1] = encode(table, a >> 2         )
-            output[j+=1] = encode(table, a << 4 | b >> 4)
-            output[j+=1] = encode(table,          b << 2)
-            output[j+=1] = table.padcode
-        else
-            # unreachable
-            @assert false
-        end
-        return i, j, :end
-    else
-        # This avoids infinite loop.
+    # Load the first three bytes.
+    i = j = 0
+    while buffer.size < 2 && i < input.size
         buffer[buffer.size+=1] = input[i+=1]
+    end
+    b1 = b2 = b3 = 0x00
+    npad = 0
+    status = :ok
+    if i < input.size
+        b1 = buffer[1]
+        b2 = buffer[2]
+        b3 = input[i+=1]
+    elseif input.size == 0
+        # Found the end of the input.
+        if buffer.size == 0
+            finish!(state)
+            return i, j, :end
+        elseif buffer.size == 1
+            b1 = buffer[1]
+            npad = 2
+        elseif buffer.size == 2
+            b1 = buffer[1]
+            b2 = buffer[2]
+            npad = 1
+        else
+            @unreachable
+        end
+        status = :end
+    else
+        # Need more data to encode.
         return i, j, :ok
     end
     empty!(buffer)
 
-    @encode64
-    @inbounds while i + 3 ≤ input.size && j + 4 ≤ output.size
-        a = input[i+1]
-        b = input[i+2]
-        c = input[i+3]
-        i += 3
-        @encode64
+    # Encode the body.
+    @inbounds while true
+        output[j+1] = encode(table, b1 >> 2          )
+        output[j+2] = encode(table, b1 << 4 | b2 >> 4)
+        output[j+3] = encode(table, b2 << 2 | b3 >> 6)
+        output[j+4] = encode(table,           b3     )
+        j += 4
+        if i + 3 ≤ input.size && j + 4 ≤ output.size
+            b1 = input[i+1]
+            b2 = input[i+2]
+            b3 = input[i+3]
+            i += 3
+        else
+            break
+        end
     end
 
-    # Return #{read bytes}, #{written bytes} and the status.
-    return i, j, :ok
+    # Epilogue.
+    while npad > 0
+        output[j-npad+1] = table.padcode
+        npad -= 1
+    end
+    if status == :end || status == :error
+        finish!(state)
+    end
+    return i, j, status
 end
