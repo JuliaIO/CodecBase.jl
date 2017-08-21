@@ -122,7 +122,7 @@ function decode16_irregular(table, c1, c2, input, i, output, j, error)
     elseif c1 == BASE16_CODEIGN && c2 == BASE16_CODEEND
         status = :end
     else
-        error[] = ArgumentError("invalid data")
+        error[] = DecodeError("invalid base16 data")
         status = :error
     end
     return i, j, status

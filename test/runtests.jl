@@ -31,13 +31,14 @@ import TranscodingStreams:
     @test transcode(Base16Decoder(), b"6  66\r\nF6F   ") == b"foo"
     @test transcode(Base16Decoder(), b"  66\t6F\t6F\n") == b"foo"
 
-    @test_throws ArgumentError transcode(Base16Decoder(), b"a")
-    @test_throws ArgumentError transcode(Base16Decoder(), b"aaa")
-    @test_throws ArgumentError transcode(Base16Decoder(), b"aaaaa")
-    @test_throws ArgumentError transcode(Base16Decoder(), b"\0")
-    @test_throws ArgumentError transcode(Base16Decoder(), b"a\0")
-    @test_throws ArgumentError transcode(Base16Decoder(), b"aa\0")
-    @test_throws ArgumentError transcode(Base16Decoder(), b"aaa\0")
+    DecodeError = CodecBase.DecodeError
+    @test_throws DecodeError transcode(Base16Decoder(), b"a")
+    @test_throws DecodeError transcode(Base16Decoder(), b"aaa")
+    @test_throws DecodeError transcode(Base16Decoder(), b"aaaaa")
+    @test_throws DecodeError transcode(Base16Decoder(), b"\0")
+    @test_throws DecodeError transcode(Base16Decoder(), b"a\0")
+    @test_throws DecodeError transcode(Base16Decoder(), b"aa\0")
+    @test_throws DecodeError transcode(Base16Decoder(), b"aaa\0")
 
     test_roundtrip_read(Base16EncoderStream, Base16DecoderStream)
     test_roundtrip_write(Base16EncoderStream, Base16DecoderStream)
@@ -62,6 +63,12 @@ end
     @test transcode(Base32Decoder(), b"MZXW6YQ=") == b"foob"
     @test transcode(Base32Decoder(), b"MZXW6YTB") == b"fooba"
     @test transcode(Base32Decoder(), b"MZXW6YTBOI======") == b"foobar"
+
+    DecodeError = CodecBase.DecodeError
+    @test_throws DecodeError transcode(Base32Decoder(), b"MZXW6=")
+    @test_throws DecodeError transcode(Base32Decoder(), b"MZXW6==")
+    @test_throws DecodeError transcode(Base32Decoder(), b"MZX\0W6===")
+    @test_throws DecodeError transcode(Base32Decoder(), b"MZXW6===\0")
 
     # extended hex
     @test transcode(Base32Encoder(hex=true), b"") == b""
@@ -110,14 +117,15 @@ end
     @test transcode(Base64Decoder(), b"  Zm9vYmFy  ") == b"foobar"
     @test transcode(Base64Decoder(), b"      Zm     9v      Ym    Fy      ") == b"foobar"
 
-    @test_throws ArgumentError transcode(Base64Decoder(), b"a")
-    @test_throws ArgumentError transcode(Base64Decoder(), b"aa")
-    @test_throws ArgumentError transcode(Base64Decoder(), b"aaa")
-    @test_throws ArgumentError transcode(Base64Decoder(), b"aaaaa")
-    @test_throws ArgumentError transcode(Base64Decoder(), b"\0")
-    @test_throws ArgumentError transcode(Base64Decoder(), b"a\0")
-    @test_throws ArgumentError transcode(Base64Decoder(), b"aa\0")
-    @test_throws ArgumentError transcode(Base64Decoder(), b"aaa\0")
+    DecodeError = CodecBase.DecodeError
+    @test_throws DecodeError transcode(Base64Decoder(), b"a")
+    @test_throws DecodeError transcode(Base64Decoder(), b"aa")
+    @test_throws DecodeError transcode(Base64Decoder(), b"aaa")
+    @test_throws DecodeError transcode(Base64Decoder(), b"aaaaa")
+    @test_throws DecodeError transcode(Base64Decoder(), b"\0")
+    @test_throws DecodeError transcode(Base64Decoder(), b"a\0")
+    @test_throws DecodeError transcode(Base64Decoder(), b"aa\0")
+    @test_throws DecodeError transcode(Base64Decoder(), b"aaa\0")
 
     test_roundtrip_read(Base64EncoderStream, Base64DecoderStream)
     test_roundtrip_write(Base64EncoderStream, Base64DecoderStream)

@@ -198,7 +198,7 @@ function decode32_irregular(table, c1, c2, c3, c4, c5, c6, c7, c8, input, i, out
     elseif c1 == c2 == c3 == c4 == c5 == c6 == c7 == BASE32_CODEIGN && c8 == BASE32_CODEEND
         status = :end
     else
-        error[] = ArgumentError("invalid data")
+        error[] = DecodeError("invalid base32 data")
         status = :error
     end
 

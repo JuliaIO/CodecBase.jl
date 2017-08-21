@@ -30,6 +30,7 @@ macro unreachable()
     :(@assert false "unreachable")
 end
 
+include("error.jl")
 include("state.jl")
 include("buffer.jl")
 include("codetable.jl")

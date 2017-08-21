@@ -152,7 +152,7 @@ function decode64_irregular(table, c1, c2, c3, c4, input, i, output, j, error)
     elseif c1 == c2 == c3 == BASE64_CODEIGN && c4 == BASE64_CODEEND
         status = :end
     else
-        error[] = ArgumentError("invalid data")
+        error[] = DecodeError("invalid base64 data")
         status = :error
     end
     return i, j, status
