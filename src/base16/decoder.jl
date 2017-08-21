@@ -7,6 +7,8 @@ struct Base16Decoder <: Codec
     buffer::Buffer
 end
 
+Base16Decoder(table::CodeTable16) = Base16Decoder(table, State(), Buffer(1))
+
 """
     Base16Decoder(;ignore::String=$(escape_string(whitespace)))
 
@@ -19,7 +21,7 @@ Arguments
 function Base16Decoder(;ignore::String=whitespace)
     table = copy(BASE16_UPPER)
     ignorechars!(table, ignore)
-    return Base16Decoder(table, State(), Buffer(1))
+    return Base16Decoder(table)
 end
 
 const Base16DecoderStream{S} = TranscodingStream{Base16Decoder,S} where S<:IO

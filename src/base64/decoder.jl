@@ -7,6 +7,8 @@ struct Base64Decoder <: Codec
     buffer::Buffer
 end
 
+Base64Decoder(table::CodeTable64) = Base64Decoder(table, State(), Buffer(3))
+
 """
     Base64Decoder(;urlsafe::Bool=false, ignore::String="$(escape_string(whitespace))")
 
@@ -25,7 +27,7 @@ function Base64Decoder(;urlsafe::Bool=false, ignore::String=whitespace)
     end
     table = copy(table)
     ignorechars!(table, ignore)
-    return Base64Decoder(table, State(), Buffer(3))
+    return Base64Decoder(table)
 end
 
 const Base64DecoderStream{S} = TranscodingStream{Base64Decoder,S} where S<:IO

@@ -7,6 +7,8 @@ struct Base64Encoder <: Codec
     buffer::Buffer
 end
 
+Base64Encoder(table::CodeTable64) = Base64Encoder(table, State(), Buffer(2))
+
 """
     Base64Encoder(;urlsafe::Bool=false)
 
@@ -22,7 +24,7 @@ function Base64Encoder(;urlsafe::Bool=false)
     else
         table = BASE64_STD
     end
-    return Base64Encoder(table, State(), Buffer(2))
+    return Base64Encoder(table)
 end
 
 const Base64EncoderStream{S} = TranscodingStream{Base64Encoder,S} where S<:IO

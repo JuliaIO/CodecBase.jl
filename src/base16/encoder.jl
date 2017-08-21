@@ -6,6 +6,8 @@ struct Base16Encoder <: Codec
     state::State
 end
 
+Base16Encoder(table::CodeTable16) = Base16Encoder(table, State())
+
 """
     Base16Encoder(;uppercase=true)
 
@@ -20,7 +22,7 @@ function Base16Encoder(;uppercase::Bool=true)
     else
         table = BASE16_LOWER
     end
-    return Base16Encoder(table, State())
+    return Base16Encoder(table)
 end
 
 const Base16EncoderStream{S} = TranscodingStream{Base16Encoder,S} where S<:IO

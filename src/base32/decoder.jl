@@ -7,6 +7,8 @@ struct Base32Decoder <: Codec
     buffer::Buffer
 end
 
+Base32Decoder(table::CodeTable32) = Base32Decoder(table, State(), Buffer(7))
+
 """
     Base32Decoder(;hex::Bool=false, ignore::String=$(escape_string(whitespace)))
 
@@ -25,7 +27,7 @@ function Base32Decoder(;hex::Bool=false, ignore::String=whitespace)
     end
     table = copy(table)
     ignorechars!(table, ignore)
-    return Base32Decoder(table, State(), Buffer(7))
+    return Base32Decoder(table)
 end
 
 const Base32DecoderStream{S} = TranscodingStream{Base32Decoder,S} where S<:IO

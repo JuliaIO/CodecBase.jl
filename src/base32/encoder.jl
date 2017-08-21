@@ -7,6 +7,8 @@ struct Base32Encoder <: Codec
     buffer::Buffer
 end
 
+Base32Encoder(table::CodeTable32) = Base32Encoder(table, State(), Buffer(4))
+
 """
     Base32Encoder(;hex::Bool=false)
 
@@ -22,7 +24,7 @@ function Base32Encoder(;hex::Bool=false)
     else
         table = BASE32_STD
     end
-    return Base32Encoder(table, State(), Buffer(4))
+    return Base32Encoder(table)
 end
 
 const Base32EncoderStream{S} = TranscodingStream{Base32Encoder,S} where S<:IO
