@@ -65,7 +65,7 @@ function TranscodingStreams.process(
         return 0, 0, :ok
     end
 
-    # Load the frist bytes.
+    # Load the first bytes.
     i = j = 0
     while buffer.size < 3 && i < input.size
         buffer[buffer.size+=1] = input[i+=1]
@@ -86,7 +86,7 @@ function TranscodingStreams.process(
     status = :ok
     @inbounds while true
         if c1 > 0x3f || c2 > 0x3f || c3 > 0x3f || c4 > 0x3f
-            i, j, status = decode_irregular(table, c1, c2, c3, c4, input, i, output, j, error)
+            i, j, status = decode64_irregular(table, c1, c2, c3, c4, input, i, output, j, error)
         else
             output[j+1] = c1 << 2 | c2 >> 4
             output[j+2] = c2 << 4 | c3 >> 2
@@ -112,7 +112,7 @@ function TranscodingStreams.process(
 end
 
 # Decode irregular code (e.g. non-alphabet, padding, etc.).
-function decode_irregular(table, c1, c2, c3, c4, input, i, output, j, error)
+function decode64_irregular(table, c1, c2, c3, c4, input, i, output, j, error)
     # Skip ignored chars.
     while true
         if c1 == BASE64_CODEIGN
