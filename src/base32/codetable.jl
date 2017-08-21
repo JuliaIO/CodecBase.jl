@@ -8,21 +8,23 @@ const BASE32_CODEIGN = 0x21  # IGNore
 const BASE32_CODEEND = 0x22  # END
 const BASE32_CODEERR = 0xff  # ERRor
 
-"""
-    CodeTable32(asciistr::String, pad::Char; casesensitive::Bool=false)
+ignorecode(::Type{CodeTable32}) = BASE32_CODEIGN
 
-Create a base32 code table.
 """
-function CodeTable32(asciistr::String, pad::Char; casesensitive::Bool=false)
-    if !isascii(asciistr) || !isascii(pad)
+    CodeTable32(asciicode::String, pad::Char; casesensitive::Bool=false)
+
+Create a code table for base32.
+"""
+function CodeTable32(asciicode::String, pad::Char; casesensitive::Bool=false)
+    if !isascii(asciicode) || !isascii(pad)
         throw(ArgumentError("the code table must be ASCII"))
-    elseif length(asciistr) != 32
+    elseif length(asciicode) != 32
         throw(ArgumentError("the code size must be 32"))
     end
     encodeword = Vector{UInt8}(32)
     decodeword = Vector{UInt8}(128)
     fill!(decodeword, BASE32_CODEERR)
-    for (i, char) in enumerate(asciistr)
+    for (i, char) in enumerate(asciicode)
         bits = UInt8(i-1)
         code = UInt8(char)
         encodeword[bits+1] = code
@@ -43,10 +45,6 @@ function CodeTable32(asciistr::String, pad::Char; casesensitive::Bool=false)
     return CodeTable32(encodeword, decodeword, padcode)
 end
 
-function ignorechars!(table::CodeTable32, chars::String)
-    return ignorechars!(table, chars, BASE32_CODEIGN)
-end
-
 @inline function encode(table::CodeTable32, byte::UInt8)
     return table.encodeword[Int(byte & 0x1f) + 1]
 end
@@ -56,11 +54,11 @@ end
 end
 
 """
-The standard base32 alphabet (cf. Table 3 of RFC4648).
+The standard base32 code table (cf. Table 3 of RFC4648).
 """
 const BASE32_STD = CodeTable32("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", '=')
 
 """
-The extended hex alphabet (cf. Table 4 of RFC4648).
+The extended hex code table (cf. Table 4 of RFC4648).
 """
 const BASE32_HEX = CodeTable32("0123456789ABCDEFGHIJKLMNOPQRSTUV", '=')

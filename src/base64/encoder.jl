@@ -20,7 +20,7 @@ function Base64Encoder(;urlsafe::Bool=false)
     if urlsafe
         table = BASE64_URLSAFE
     else
-        table = BASE64_STANDARD
+        table = BASE64_STD
     end
     return Base64Encoder(table, State(), Buffer(2))
 end

@@ -21,7 +21,7 @@ function Base64Decoder(;urlsafe::Bool=false, ignore::String=whitespace)
     if urlsafe
         table = BASE64_URLSAFE
     else
-        table = BASE64_STANDARD
+        table = BASE64_STD
     end
     table = copy(table)
     ignorechars!(table, ignore)

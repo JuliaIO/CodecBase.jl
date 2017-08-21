@@ -21,14 +21,20 @@ end
 
 const whitespace = "\t\n\v\f\r "
 
-# Add ignored characters to the table.
-function ignorechars!(table::CodeTable, chars::String, code_ignore::UInt8)
-    if !isascii(chars)
+function ignorecode end
+
+"""
+    ignorechars!(table::CodeTable, asciichars::String)
+
+Add characters that will be ignored while decoding.
+"""
+function ignorechars!(table::CodeTable, asciichars::String)
+    if !isascii(asciichars)
         throw(ArgumentError("ignored characters must be ASCII"))
     end
-    for char in chars
+    for char in asciichars
         code = UInt8(char)
-        table.decodeword[code+1] = code_ignore
+        table.decodeword[code+1] = ignorecode(typeof(table))
     end
     return table
 end
