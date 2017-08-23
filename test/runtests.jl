@@ -132,6 +132,9 @@ end
     @test transcode(Base64Encoder(), b"fooba") == b"Zm9vYmE="
     @test transcode(Base64Encoder(), b"foobar") == b"Zm9vYmFy"
 
+    @test transcode(Base64Encoder(urlsafe=false), b"響き") == b"6Z+/44GN"
+    @test transcode(Base64Encoder(urlsafe=true),  b"響き") == b"6Z-_44GN"
+
     @test transcode(Base64Decoder(), b"") == b""
     @test transcode(Base64Decoder(), b"Zg==") == b"f"
     @test transcode(Base64Decoder(), b"Zm8=") == b"fo"
@@ -146,6 +149,9 @@ end
     @test transcode(Base64Decoder(), b"Z m  9\rv\r\nYm\nF\t\ty") == b"foobar"
     @test transcode(Base64Decoder(), b"  Zm9vYmFy  ") == b"foobar"
     @test transcode(Base64Decoder(), b"      Zm     9v      Ym    Fy      ") == b"foobar"
+
+    @test transcode(Base64Decoder(urlsafe=false), b"6Z+/44GN") == b"響き"
+    @test transcode(Base64Decoder(urlsafe=true),  b"6Z-_44GN") == b"響き"
 
     DecodeError = CodecBase.DecodeError
     @test_throws DecodeError transcode(Base64Decoder(), b"a")
