@@ -7,6 +7,19 @@ import TranscodingStreams:
     test_roundtrip_lines,
     test_roundtrip_transcode
 
+@testset "DecodeError" begin
+    error = CodecBase.DecodeError("basexx: invalid data")
+    @test error isa CodecBase.DecodeError
+    @test error isa Exception
+    @test sprint(showerror, error) == "DecodeError: basexx: invalid data"
+    try
+        throw(error)
+        @test false
+    catch ex
+        @test ex isa CodecBase.DecodeError
+    end
+end
+
 @testset "Base16" begin
     @test transcode(Base16Encoder(), b"") == b""
     @test transcode(Base16Encoder(), b"f") == b"66"
