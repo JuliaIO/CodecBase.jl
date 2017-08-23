@@ -4,7 +4,8 @@ os:
   - linux
 julia:
   - 0.6
-  - nightly
+  # see https://discourse.julialang.org/t/is-there-a-problem-with-codecov-and-nightly/5517
+  # - nightly
 notifications:
   email: false
 git:
