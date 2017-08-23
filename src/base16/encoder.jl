@@ -9,18 +9,18 @@ end
 Base16Encoder(table::CodeTable16) = Base16Encoder(table, State())
 
 """
-    Base16Encoder(;uppercase=true)
+    Base16Encoder(;lowercase=false)
 
 Create a base16 encoding codec.
 
 Arguments
-- `uppercase`: use [0-9A-F] instead of [0-9a-f].
+- `lowercase`: use [0-9a-f] instead of [0-9A-F].
 """
-function Base16Encoder(;uppercase::Bool=true)
-    if uppercase
-        table = BASE16_UPPER
-    else
+function Base16Encoder(;lowercase::Bool=false)
+    if lowercase
         table = BASE16_LOWER
+    else
+        table = BASE16_UPPER
     end
     return Base16Encoder(table)
 end

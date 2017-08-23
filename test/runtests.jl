@@ -35,6 +35,9 @@ end
     @test transcode(Base16Encoder(), b"fooba") == b"666F6F6261"
     @test transcode(Base16Encoder(), b"foobar") == b"666F6F626172"
 
+    @test transcode(Base16Encoder(lowercase=false), b"自問自答") == b"E887AAE5958FE887AAE7AD94"
+    @test transcode(Base16Encoder(lowercase=true),  b"自問自答") == b"e887aae5958fe887aae7ad94"
+
     @test transcode(Base16Decoder(), b"") == b""
     @test transcode(Base16Decoder(), b"66") == b"f"
     @test transcode(Base16Decoder(), b"666F") == b"fo"
