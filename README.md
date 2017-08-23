@@ -1,11 +1,8 @@
-# CodecBase
+CodecBase.jl
+============
 
-[![Build Status](https://travis-ci.org/bicycle1885/CodecBase.jl.svg?branch=master)](https://travis-ci.org/bicycle1885/CodecBase.jl)
-
-[![Coverage Status](https://coveralls.io/repos/bicycle1885/CodecBase.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/bicycle1885/CodecBase.jl?branch=master)
-
-[![codecov.io](http://codecov.io/github/bicycle1885/CodecBase.jl/coverage.svg?branch=master)](http://codecov.io/github/bicycle1885/CodecBase.jl?branch=master)
-
+[![TravisCI Status][travisci-img]][travisci-url]
+[![codecov.io][codecov-img]][codecov-url]
 
 ## Installation
 
@@ -19,7 +16,7 @@ Pkg.add("CodecBase")
 using CodecBase
 
 # UTF8-encoded text.
-data = b"""
+data = """
 祇園精舎の鐘の声、諸行無常の響きあり。
 沙羅双樹の花の色、盛者必衰のことわりをあらはす。
 奢れる人も久しからず、唯春の夜の夢のごとし。
@@ -39,13 +36,13 @@ TjgajjgZfjgIIK
 encoded = readstring(Base64EncoderStream(IOBuffer(data)))
 @assert encoded == replace(base64, "\n", "")
 decoded = read(Base64DecoderStream(IOBuffer(base64)))
-@assert decoded == data
+@assert decoded == Vector{UInt8}(data)
 
 # Byte array API.
 encoded = transcode(Base64Encoder(), data)
 @assert String(encoded) == replace(base64, "\n", "")
 decoded = transcode(Base64Decoder(), base64)
-@assert decoded == data
+@assert decoded == Vector{UInt8}(data)
 ```
 
 This package exports following codecs and streams:
@@ -62,3 +59,8 @@ This package exports following codecs and streams:
 See docstrings and
 [TranscodingStreams.jl](https://github.com/bicycle1885/TranscodingStreams.jl)
 for details.
+
+[travisci-img]: https://travis-ci.org/bicycle1885/CodeBase.jl.svg?branch=master
+[travisci-url]: https://travis-ci.org/bicycle1885/CodeBase.jl
+[codecov-img]: http://codecov.io/github/bicycle1885/CodeBase.jl/coverage.svg?branch=master
+[codecov-url]: http://codecov.io/github/bicycle1885/CodeBase.jl?branch=master
