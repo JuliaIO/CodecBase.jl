@@ -21,6 +21,12 @@ import TranscodingStreams:
 end
 
 @testset "Base16" begin
+    CodeTable16 = CodecBase.CodeTable16
+    @test_throws ArgumentError CodeTable16("Sigur Rós")
+    @test_throws ArgumentError CodeTable16("Takk")
+    table = copy(CodecBase.BASE16_UPPER)
+    @test_throws ArgumentError CodecBase.ignorechars!(table, "Jónsi")
+
     @test transcode(Base16Encoder(), b"") == b""
     @test transcode(Base16Encoder(), b"f") == b"66"
     @test transcode(Base16Encoder(), b"fo") == b"666F"
@@ -60,6 +66,10 @@ end
 end
 
 @testset "Base32" begin
+    CodeTable32 = CodecBase.CodeTable32
+    @test_throws ArgumentError CodeTable32("Sigur Rós", '=')
+    @test_throws ArgumentError CodeTable32("Takk", '=')
+
     # standard
     @test transcode(Base32Encoder(), b"") == b""
     @test transcode(Base32Encoder(), b"f") == b"MY======"
@@ -107,6 +117,10 @@ end
 end
 
 @testset "Base64" begin
+    CodeTable64 = CodecBase.CodeTable64
+    @test_throws ArgumentError CodeTable64("Sigur Rós", '=')
+    @test_throws ArgumentError CodeTable64("Takk", '=')
+
     @test transcode(Base64Encoder(), b"") == b""
     @test transcode(Base64Encoder(), b"f") == b"Zg=="
     @test transcode(Base64Encoder(), b"fo") == b"Zm8="
