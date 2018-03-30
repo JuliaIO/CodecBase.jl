@@ -25,6 +25,10 @@ import TranscodingStreams:
     Codec,
     Memory,
     Error
+using Compat:
+    undef,
+    isuppercase,
+    islowercase
 
 macro unreachable()
     :(@assert false "unreachable")

@@ -1,11 +1,19 @@
 using CodecBase
-using Base.Test
+if VERSION > v"0.7-"
+    using Test
+else
+    using Base.Test
+end
 import TranscodingStreams:
     TranscodingStream,
     test_roundtrip_read,
     test_roundtrip_write,
     test_roundtrip_lines,
     test_roundtrip_transcode
+
+if isdefined(Base, :codeunits)
+    macro b_str(s) Vector(codeunits(unescape_string(s))) end
+end
 
 @testset "DecodeError" begin
     error = CodecBase.DecodeError("basexx: invalid data")

@@ -21,8 +21,8 @@ function CodeTable64(asciicode::String, pad::Char)
     elseif length(asciicode) != 64
         throw(ArgumentError("the code size must be 64"))
     end
-    encodeword = Vector{UInt8}(64)
-    decodeword = Vector{UInt8}(256)
+    encodeword = Vector{UInt8}(undef, 64)
+    decodeword = Vector{UInt8}(undef, 256)
     fill!(decodeword, BASE64_CODEERR)
     for (i, char) in enumerate(asciicode)
         bits = UInt8(i-1)

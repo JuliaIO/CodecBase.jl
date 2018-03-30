@@ -21,8 +21,8 @@ function CodeTable32(asciicode::String, pad::Char; casesensitive::Bool=false)
     elseif length(asciicode) != 32
         throw(ArgumentError("the code size must be 32"))
     end
-    encodeword = Vector{UInt8}(32)
-    decodeword = Vector{UInt8}(128)
+    encodeword = Vector{UInt8}(undef, 32)
+    decodeword = Vector{UInt8}(undef, 128)
     fill!(decodeword, BASE32_CODEERR)
     for (i, char) in enumerate(asciicode)
         bits = UInt8(i-1)
@@ -30,11 +30,11 @@ function CodeTable32(asciicode::String, pad::Char; casesensitive::Bool=false)
         encodeword[bits+1] = code
         decodeword[code+1] = bits
         if !casesensitive
-            if isupper(char)
+            if isuppercase(char)
                 code = UInt8(lowercase(char))
                 decodeword[code+1] = bits
             end
-            if islower(char)
+            if islowercase(char)
                 code = UInt8(uppercase(char))
                 decodeword[code+1] = bits
             end
