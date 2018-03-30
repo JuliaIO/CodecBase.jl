@@ -1,5 +1,9 @@
 using CodecBase
-using Base.Test
+if VERSION > v"0.7-"
+    using Test
+else
+    using Base.Test
+end
 import TranscodingStreams:
     TranscodingStream,
     test_roundtrip_read,

@@ -20,8 +20,8 @@ function CodeTable16(asciicode::String; casesensitive::Bool=false)
     elseif length(asciicode) != 16
         throw(ArgumentError("the code size must be 16"))
     end
-    encodeword = Vector{UInt8}(16)
-    decodeword = Vector{UInt8}(256)
+    encodeword = Vector{UInt8}(undef, 16)
+    decodeword = Vector{UInt8}(undef, 256)
     fill!(decodeword, BASE16_CODEERR)
     for (i, char) in enumerate(asciicode)
         bits = UInt8(i-1)
@@ -29,11 +29,11 @@ function CodeTable16(asciicode::String; casesensitive::Bool=false)
         encodeword[bits+1] = code
         decodeword[code+1] = bits
         if !casesensitive
-            if isupper(char)
+            if isuppercase(char)
                 code = UInt8(lowercase(char))
                 decodeword[code+1] = bits
             end
-            if islower(char)
+            if islowercase(char)
                 code = UInt8(uppercase(char))
                 decodeword[code+1] = bits
             end

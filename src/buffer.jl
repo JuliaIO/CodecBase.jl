@@ -6,7 +6,7 @@ mutable struct Buffer
     size::Int
 end
 
-Buffer(bufsize) = Buffer(Vector{UInt8}(bufsize), 0)
+Buffer(bufsize) = Buffer(Vector{UInt8}(undef, bufsize), 0)
 Base.empty!(buffer::Buffer) = buffer.size = 0
 Base.getindex(buffer::Buffer, i::Integer) = getindex(buffer.data, i)
 Base.setindex!(buffer::Buffer, v, i::Integer) = setindex!(buffer.data, v, i)
