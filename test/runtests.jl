@@ -11,7 +11,9 @@ import TranscodingStreams:
     test_roundtrip_lines,
     test_roundtrip_transcode
 
-macro b_str(s) Vector(codeunits(unescape_string(s))) end
+if isdefined(Base, :codeunits)
+    macro b_str(s) Vector(codeunits(unescape_string(s))) end
+end
 
 @testset "DecodeError" begin
     error = CodecBase.DecodeError("basexx: invalid data")
