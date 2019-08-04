@@ -2,7 +2,7 @@ name = "CodecBase"
 uuid = "6c391c72-fb7b-5838-ba82-7cfb1bcfecbf"
 license = "MIT"
 authors = ["Kenta Sato <bicycle1885@gmail.com>"]
-version = "0.2.0"
+version = "0.3.0"
 
 [deps]
 TranscodingStreams = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
