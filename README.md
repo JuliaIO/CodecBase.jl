@@ -1,9 +1,6 @@
 CodecBase.jl
 ============
 
-[![TravisCI Status][travisci-img]][travisci-url]
-[![codecov.io][codecov-img]][codecov-url]
-
 ## Installation
 
 ```julia
