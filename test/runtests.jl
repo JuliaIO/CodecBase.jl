@@ -1,5 +1,6 @@
 using CodecBase
 using Test
+using Random
 import TranscodingStreams:
     TranscodingStream,
     test_roundtrip_read,
