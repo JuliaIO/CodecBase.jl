@@ -1,12 +1,13 @@
 using CodecBase
 using Test
-using Random
-import TranscodingStreams:
+using TranscodingStreams:
     TranscodingStreams,
-    TranscodingStream,
+    TranscodingStream
+using TestsForCodecPackages:
     test_roundtrip_read,
     test_roundtrip_write,
     test_roundtrip_lines,
+    test_roundtrip_seekstart,
     test_roundtrip_transcode
 
 @testset "DecodeError" begin
@@ -67,9 +68,7 @@ end
     test_roundtrip_read(Base16EncoderStream, Base16DecoderStream)
     test_roundtrip_write(Base16EncoderStream, Base16DecoderStream)
     test_roundtrip_lines(Base16EncoderStream, Base16DecoderStream)
-    if isdefined(TranscodingStreams, :test_roundtrip_seekstart)
-        TranscodingStreams.test_roundtrip_seekstart(Base16EncoderStream, Base16DecoderStream)
-    end
+    test_roundtrip_seekstart(Base16EncoderStream, Base16DecoderStream)
     test_roundtrip_transcode(Base16Encoder, Base16Decoder)
 end
 
@@ -121,9 +120,7 @@ end
     test_roundtrip_read(Base32EncoderStream, Base32DecoderStream)
     test_roundtrip_write(Base32EncoderStream, Base32DecoderStream)
     test_roundtrip_lines(Base32EncoderStream, Base32DecoderStream)
-    if isdefined(TranscodingStreams, :test_roundtrip_seekstart)
-        TranscodingStreams.test_roundtrip_seekstart(Base32EncoderStream, Base32DecoderStream)
-    end
+    test_roundtrip_seekstart(Base32EncoderStream, Base32DecoderStream)
     test_roundtrip_transcode(Base32Encoder, Base32Decoder)
 end
 
@@ -174,8 +171,6 @@ end
     test_roundtrip_read(Base64EncoderStream, Base64DecoderStream)
     test_roundtrip_write(Base64EncoderStream, Base64DecoderStream)
     test_roundtrip_lines(Base64EncoderStream, Base64DecoderStream)
-    if isdefined(TranscodingStreams, :test_roundtrip_seekstart)
-        TranscodingStreams.test_roundtrip_seekstart(Base64EncoderStream, Base64DecoderStream)
-    end
+    test_roundtrip_seekstart(Base64EncoderStream, Base64DecoderStream)
     test_roundtrip_transcode(Base64Encoder, Base64Decoder)
 end
