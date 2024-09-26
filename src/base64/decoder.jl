@@ -41,6 +41,14 @@ function Base64DecoderStream(stream::IO; kwargs...)
     return TranscodingStream(Base64Decoder(;kwargs...), stream)
 end
 
+function TranscodingStreams.minoutsize(::Base64Decoder, ::Memory)
+    return 3
+end
+
+function TranscodingStreams.expectedsize(::Base64Decoder, input::Memory)
+    return cld(input.size, 4) * 3 + 3
+end
+
 function TranscodingStreams.startproc(
         codec :: Base64Decoder,
         state :: Symbol,
