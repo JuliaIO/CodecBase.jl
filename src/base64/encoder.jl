@@ -38,6 +38,14 @@ function Base64EncoderStream(stream::IO; kwargs...)
     return TranscodingStream(Base64Encoder(;kwargs...), stream)
 end
 
+function TranscodingStreams.minoutsize(::Base64Encoder, ::Memory)
+    return 4
+end
+
+function TranscodingStreams.expectedsize(::Base64Encoder, input::Memory)
+    return cld(input.size, 3) * 4 + 4
+end
+
 function TranscodingStreams.startproc(
         codec :: Base64Encoder,
         state :: Symbol,
@@ -61,6 +69,7 @@ function TranscodingStreams.process(
         error[] = ArgumentError("encoding is already finished")
         return 0, 0, :error
     elseif output.size < 4
+        @assert false
         # Need more output space.
         return 0, 0, :ok
     end
